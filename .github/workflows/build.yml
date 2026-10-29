@@ -1,0 +1,76 @@
+# Builds the App on demand, so anyone who'd rather not run a release can
+# build their own from their fork and download it from the run. It builds
+# exactly as a release does, but publishes nothing: the exe is a run
+# artifact, attested to the repository that built it.
+#
+# Building runs every npm and Rust dependency, so it gets only read access.
+# Attesting gets the signing permissions, and runs no project code: it never
+# checks the repository out.
+name: Build App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-app
+
+      - name: The App's version
+        id: version
+        run: |
+          version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: pnpm typecheck
+      - run: pnpm test
+      # The Rust side compiles in the built UI, so it's built first.
+      - run: pnpm build:app
+      - run: cargo test --locked
+        working-directory: src-tauri
+      - run: pnpm tauri build --no-bundle -- --locked
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: Erdtrack-${{ steps.version.outputs.version }}-windows
+          path: src-tauri/target/release/erdtrack.exe
+          if-no-files-found: error
+
+  attest:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # sign the attestation
+      attestations: write
+      artifact-metadata: write
+    steps:
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: Erdtrack-${{ needs.build.outputs.version }}-windows
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: erdtrack.exe
+
+      - name: Say where it is
+        run: |
+          {
+            echo "## Erdtrack ${{ needs.build.outputs.version }} is built"
+            echo
+            echo "Download **Erdtrack-${{ needs.build.outputs.version }}-windows** under Artifacts below. It holds \`erdtrack.exe\`, which can be checked with:"
+            echo
+            echo '```'
+            echo "gh attestation verify erdtrack.exe --repo $GITHUB_REPOSITORY"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

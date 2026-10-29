@@ -1,6 +1,7 @@
 # Builds the App from a tag, zips it and attests both, so anyone can check a
 # download with `gh attestation verify`. Every self-hosted copy uses the same
-# App, so nothing about a deployment is built in. Forks never build it.
+# App, so nothing about a deployment is built in. Forks skip it, and can
+# build their own with Build App instead.
 #
 # Building runs every npm and Rust dependency, so it gets only read access.
 # Publishing gets the write and signing permissions, and runs no project code:

@@ -1,7 +1,7 @@
 # Tests the App when a push to main or a pull request changes it. It's its
 # own workflow, so it never slows or blocks CI's deploy, which the App
-# doesn't use. Forks never build the App: they use this repository's
-# releases.
+# doesn't use. Forks skip it: they use this repository's releases, or
+# build their own with Build App.
 name: App
 
 on:

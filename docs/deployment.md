@@ -49,7 +49,7 @@ Running Set up again never signs anyone out.
 
 The App is optional. Without it the channel is Manual, and Mods record every Death by hand. With it, the channel is Watched: the App reads the save on the Streamer's PC and records Deaths and beaten bosses itself. The [README](../README.md#watched-mode) says what changes for Mods.
 
-The App is Windows only. Every self-hosted copy uses the same App, released from [ohnoitsmaki/erdtrack](https://github.com/ohnoitsmaki/erdtrack/releases), since forks never build it. It reads the save only while `eldenring.exe` is running, and only by listing process names: it never touches the game's process, so it gives Easy Anti-Cheat nothing to act on.
+The App is Windows only. Every self-hosted copy uses the same App, released from [ohnoitsmaki/erdtrack](https://github.com/ohnoitsmaki/erdtrack/releases). Nothing about a deployment is built in, so a fork never needs its own, but it can [build one itself](#or-build-it-yourself). It reads the save only while `eldenring.exe` is running, and only by listing process names: it never touches the game's process, so it gives Easy Anti-Cheat nothing to act on.
 
 ### 1. Download and check it
 
@@ -64,6 +64,22 @@ The App is Windows only. Every self-hosted copy uses the same App, released from
 3. Unzip it somewhere you can write to, such as Documents or Desktop, not Program Files. The App keeps everything in its own folder, its settings included, and won't start from one it can't write to.
 
 The exe isn't code-signed, so the first time it's run Windows may say "Windows protected your PC". Click **More info**, then **Run anyway**.
+
+### Or build it yourself
+
+To run an App built from your own fork rather than a release, build it in your fork's Actions. It's the same build as a release's, and it's free on a public fork.
+
+1. In your fork, open **Actions → Build App**, click **Run workflow**, and click **Run workflow** again. Sync the fork first to build the latest version.
+2. When it's finished (about 5 minutes), open the run, and under **Artifacts** download **Erdtrack-<version>-windows**. It's a zip holding `erdtrack.exe`.
+3. Check that your fork built it:
+
+   ```sh
+   gh attestation verify erdtrack.exe --repo <you>/erdtrack
+   ```
+
+4. Make a folder named `Erdtrack` somewhere you can write to, as above, and put `erdtrack.exe` in it.
+
+To update an App you built, run **Build App** again after syncing the fork, and replace `erdtrack.exe` in its folder.
 
 ### 2. Create the Watcher token
 
@@ -127,7 +143,7 @@ pnpm typecheck
 pnpm build:app && cargo test --manifest-path src-tauri/Cargo.toml   # the App's Watcher
 ```
 
-The App is Windows only. `pnpm tauri dev` runs it, and `pnpm tauri build --no-bundle` builds `src-tauri/target/release/erdtrack.exe`. Elsewhere it builds for development, and behaves as if Elden Ring were always running. It's tested by `.github/workflows/app.yml` when it changes, and a `v*` tag matching its version in `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` releases it with `.github/workflows/release.yml`. Forks never build it.
+The App is Windows only. `pnpm tauri dev` runs it, and `pnpm tauri build --no-bundle` builds `src-tauri/target/release/erdtrack.exe`. Elsewhere it builds for development, and behaves as if Elden Ring were always running. It's tested by `.github/workflows/app.yml` when it changes, and a `v*` tag matching its version in `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` releases it with `.github/workflows/release.yml`, which forks skip. Anyone can build it from **Actions → Build App** (`.github/workflows/build.yml`), which publishes nothing.
 
 ## How a deploy works
 

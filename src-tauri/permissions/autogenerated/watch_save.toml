@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-watch-save"
+description = "Enables the watch_save command without any pre-configured scope."
+commands.allow = ["watch_save"]
+
+[[permission]]
+identifier = "deny-watch-save"
+description = "Denies the watch_save command without any pre-configured scope."
+commands.deny = ["watch_save"]

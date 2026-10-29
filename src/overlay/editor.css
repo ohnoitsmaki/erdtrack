@@ -1,0 +1,16 @@
+/* A checkerboard behind the Preview, so it's clear where OBS would show the
+   scene through. */
+.preview-stage {
+  background-color: #6b6b76;
+  background-image:
+    linear-gradient(45deg, #57575f 25%, transparent 25%),
+    linear-gradient(-45deg, #57575f 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #57575f 75%),
+    linear-gradient(-45deg, transparent 75%, #57575f 75%);
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+}

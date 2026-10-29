@@ -1,0 +1,96 @@
+# Builds the App from a tag, zips it and attests both, so anyone can check a
+# download with `gh attestation verify`. Every self-hosted copy uses the same
+# App, so nothing about a deployment is built in. Forks never build it.
+#
+# Building runs every npm and Rust dependency, so it gets only read access.
+# Publishing gets the write and signing permissions, and runs no project code:
+# it never checks the repository out.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    if: ${{ !github.event.repository.fork }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-app
+
+      - name: The tag matches the App's version
+        id: version
+        run: |
+          version="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match version $version in src-tauri/tauri.conf.json"
+            exit 1
+          fi
+          if ! grep -qx "version = \"$version\"" src-tauri/Cargo.toml; then
+            echo "::error::src-tauri/Cargo.toml's version isn't $version"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: pnpm typecheck
+      - run: pnpm test
+      # The Rust side compiles in the built UI, so it's built first.
+      - run: pnpm build:app
+      - run: cargo test --locked
+        working-directory: src-tauri
+      - run: pnpm tauri build --no-bundle -- --locked
+
+      - name: Zip the App folder
+        run: |
+          mkdir Erdtrack
+          cp src-tauri/target/release/erdtrack.exe Erdtrack/
+          7z a "Erdtrack-$VERSION-windows.zip" Erdtrack
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: app
+          path: |
+            Erdtrack/erdtrack.exe
+            Erdtrack-${{ env.VERSION }}-windows.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release
+      id-token: write # sign the attestation
+      attestations: write
+      artifact-metadata: write
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: app
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            Erdtrack/erdtrack.exe
+            Erdtrack-${{ env.VERSION }}-windows.zip
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "Erdtrack-$VERSION-windows.zip" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag --title "Erdtrack $VERSION" --generate-notes

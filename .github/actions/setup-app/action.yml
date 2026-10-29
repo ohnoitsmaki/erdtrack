@@ -1,0 +1,34 @@
+# The toolchains and dependencies the App builds with, for both the App's
+# tests and its releases. The Rust cache is saved only from main: a tag can
+# restore main's cache but not another tag's, so caches saved anywhere else
+# would never be used.
+name: Set up the App
+description: Node, pnpm, Rust, the Rust cache and the JS dependencies
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      with:
+        version: 12.14.0
+
+    - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+      with:
+        node-version: 24
+        cache: pnpm
+
+    - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      with:
+        toolchain: stable
+
+    # The cache isn't saved again while its key is unchanged, so prefix-key
+    # changes whenever what goes in it does, as when main began building the
+    # release exe.
+    - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      with:
+        workspaces: src-tauri
+        prefix-key: v1-rust
+        shared-key: app
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash

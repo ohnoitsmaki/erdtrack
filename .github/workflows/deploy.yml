@@ -1,0 +1,50 @@
+# Deploys to production, for CI after a push to main and for Set up. The
+# deployment is the one CONVEX_DEPLOY_KEY is for (docs/deployment.md).
+name: Deploy
+
+on:
+  workflow_call:
+    secrets:
+      CONVEX_DEPLOY_KEY:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Builds the Panel against production's VITE_CONVEX_URL, deploys the
+      # Convex functions, then uploads the Panel to the static-hosting
+      # component. Convex goes before the upload, so the new Panel
+      # never calls functions that don't exist yet.
+      - run: pnpm exec static-hosting deploy --build-command 'pnpm build'
+      # Channels made before Tags get Gravity. Does nothing once they have it.
+      - run: npx convex run tags:makeGravityTags
+      - name: Print the addresses
+        run: |
+          site=$(npx convex run panel:siteUrl | tr -d '"')
+          {
+            echo "## Deployed"
+            echo
+            echo "- **Panel:** $site"
+            echo "- **Overlay:** $site/overlay (List view: $site/overlay/list, demo: $site/overlay/demo)"
+            echo "- **Twitch OAuth redirect URL:** \`$site/api/auth/oauth2/callback/twitch\`"
+          } >> "$GITHUB_STEP_SUMMARY"

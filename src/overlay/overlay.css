@@ -1,0 +1,757 @@
+/* Everything the Streamer styles comes in as variables, set on .overlay-frame
+   (Overlay.tsx). Shared with the preview in the Panel. */
+.overlay-frame {
+  display: flex;
+  justify-content: var(--justify);
+  transform: translate(var(--offset-x), var(--offset-y));
+}
+
+.overlay {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: var(--justify);
+  gap: 0.15em;
+  padding: var(--padding);
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--size);
+  font-weight: var(--weight);
+  text-align: var(--align);
+  text-shadow: var(--text-shadow);
+  zoom: var(--scale);
+  line-height: 1.2;
+}
+
+.overlay.row {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 1em;
+}
+
+.overlay .count,
+.overlay .mark {
+  color: var(--accent);
+}
+
+.overlay .tally {
+  font-size: 0.65em;
+}
+
+.overlay.list ul {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  column-gap: 0.6em;
+  margin: 0;
+  padding: 0;
+  font-size: 0.6em;
+  list-style: none;
+}
+
+.overlay.list li {
+  display: contents;
+}
+
+.overlay.list .count {
+  text-align: right;
+}
+
+.overlay.list .defeated .name {
+  opacity: 0.7;
+}
+
+/* The Card. Its sizes are in em of half the Streamer's font size, so the name
+   of the Current Encounter is a little smaller than in the other layouts. */
+.overlay.card {
+  display: flex;
+  align-items: stretch;
+  /* Each section spaces itself, so a closed one takes no room. */
+  gap: 0;
+  box-sizing: border-box;
+  width: 24em;
+  border: 1px solid var(--accent-faint);
+  border-radius: 6px;
+  /* A dark ring inside the border, so the edge reads on a bright scene. */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.6);
+  font-size: calc(var(--size) / 2);
+  text-align: left;
+  line-height: 1.25;
+}
+
+.overlay.card .label {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.85em;
+  font-weight: var(--weight);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.overlay.card .icon {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+
+.overlay.card .total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1em;
+}
+
+.overlay.card .total .count {
+  font-size: 3em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The Play Time under the Total, in the plain sans of the details. */
+.overlay.card .played {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  opacity: 0.75;
+  font-family: "Inter Variable", system-ui, sans-serif;
+  font-size: 1.05em;
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay.card .encounter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  padding-top: 1.1em;
+}
+
+.overlay.card .encounter .name {
+  font-size: 1.4em;
+}
+
+/* In a plain sans, under whichever font the Streamer picked, as in the look the
+   Card was designed from. */
+.overlay.card .details {
+  opacity: 0.75;
+  font-family: "Inter Variable", system-ui, sans-serif;
+  font-size: 1.05em;
+  font-weight: normal;
+}
+
+.overlay.card .defeated {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  margin-top: 1.1em;
+  padding-top: 1.1em;
+  border-top: 1px solid var(--accent-faint);
+}
+
+.overlay.card > :first-child,
+.overlay.card > .reveal:first-child .encounter {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.overlay.card .defeated ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overlay.card .defeated li {
+  padding: 0.2em 0.55em;
+  border: 1px solid var(--accent-faint);
+  border-radius: 4px;
+  font-size: 0.75em;
+  font-weight: normal;
+  opacity: 0.85;
+}
+
+.overlay.card .defeated li .count {
+  margin-left: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlay.card .defeated .more {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+/* A fight's section opens and closes, and what's in it fades. */
+.overlay.card .reveal {
+  overflow: hidden;
+  transition: height 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.card .reveal > * {
+  opacity: 0;
+  transform: translateY(-0.4em);
+  transition:
+    opacity 200ms ease-out,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.card .reveal.open > * {
+  opacity: 1;
+  transform: none;
+  transition-delay: 90ms;
+}
+
+/* A boss replacing another, with no closing in between. */
+.overlay.card .reveal.open .encounter {
+  animation: overlay-arrive 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes overlay-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+
+/* A count that's just changed rises into place and settles. */
+.overlay.card .count {
+  display: inline-block;
+}
+
+.overlay.card .count.changed {
+  animation: overlay-count 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes overlay-count {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em) scale(1.12);
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* Digits in the panels sit in boxes as wide as a 0 (Overlay.tsx), so counts
+   don't shift as they change in a font without tabular figures. */
+.overlay.card .digit,
+.overlay.banner .digit,
+.overlay.framed .digit {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+}
+
+.overlay.card .count,
+.overlay.banner .count,
+.overlay.framed .count {
+  white-space: nowrap;
+}
+
+/* The Banner and the Framed banner. Sizes are in em of half the Streamer's
+   font size, as in the Card. The panel is as wide and as tall as the
+   Streamer set, and grows to fit its numbers. What's in it sits in the
+   middle of any room to spare. */
+.overlay.banner,
+.overlay.framed {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.3em;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: var(--width);
+  min-height: var(--height);
+  padding: var(--padding) calc(var(--padding) * 1.4);
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse at 30% 50%, var(--accent-soft), transparent 60%),
+    var(--background);
+  box-shadow: inset 0 0 0 1px var(--accent-faint);
+  font-size: calc(var(--size) / 2);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.overlay.banner .main,
+.overlay.framed .main {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+.overlay.banner .stats,
+.overlay.framed .stats {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5em;
+}
+
+.overlay.banner .stat,
+.overlay.framed .stat {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  min-width: 6.5em;
+}
+
+.overlay.banner .label,
+.overlay.framed .label {
+  color: var(--accent);
+  font-size: 0.76em;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.overlay.banner .count,
+.overlay.framed .count {
+  display: inline-block;
+  color: var(--text);
+}
+
+.overlay.banner .stat .count,
+.overlay.framed .stat .count {
+  font-size: 2.35em;
+  line-height: 1.05;
+  text-shadow: 0 0 0.25em var(--accent-glow);
+}
+
+/* Every stat's label is on two lines, centred, so the numbers share a line
+   and the stats sit in the middle of the panel. */
+.overlay.banner .stat .label,
+.overlay.framed .stat .label {
+  line-height: 1.25;
+  text-align: center;
+  white-space: pre-line;
+}
+
+/* Set shorter than that allows, the panel puts each label on one line
+   (Overlay.tsx), and widens to fit them. */
+.overlay.banner.short .stat .label,
+.overlay.framed.short .stat .label {
+  white-space: nowrap;
+}
+
+/* Stats that take turns, such as Attempts and Defeated or the Tags'
+   tallies, share one place, so it's as wide as the widest. They pass
+   through it: the one leaving drifts up and softens away as the next rises
+   from below and comes into focus. The rest wait below, unseen. */
+.overlay.banner .stat.passing,
+.overlay.framed .stat.passing {
+  display: grid;
+  /* Each at the bottom, so its number shares a line with the others
+     however many lines its label has. */
+  align-items: end;
+}
+
+.overlay.banner .passing > .turn,
+.overlay.framed .passing > .turn {
+  display: flex;
+  grid-area: 1 / 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  filter: blur(0.12em);
+  transform: translateY(0.6em);
+}
+
+.overlay.banner .passing > .turn.left,
+.overlay.framed .passing > .turn.left {
+  transform: translateY(-0.6em);
+  transition:
+    opacity 600ms ease-in,
+    filter 600ms ease-in,
+    transform 600ms cubic-bezier(0.55, 0, 0.75, 0.4);
+}
+
+.overlay.banner .passing > .turn.shown,
+.overlay.framed .passing > .turn.shown {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  transition:
+    opacity 700ms ease-out 250ms,
+    filter 700ms ease-out 250ms,
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1) 250ms;
+}
+
+/* The Tags' place grows open sideways, from nothing to as wide as the
+   widest Tag, and the numbers beside it glide over to make room. While shut,
+   it and its divider take back the gaps around them. */
+.overlay.banner .reveal-across,
+.overlay.framed .reveal-across {
+  display: flex;
+  overflow-x: clip;
+  transition:
+    width 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-left 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.banner .reveal-across > *,
+.overlay.framed .reveal-across > * {
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 200ms ease-out,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.banner .reveal-across.open > *,
+.overlay.framed .reveal-across.open > * {
+  opacity: 1;
+  transform: none;
+  transition-delay: 90ms;
+}
+
+.overlay.banner .stats .reveal-across:not(.open),
+.overlay.framed .stats .reveal-across:not(.open),
+.overlay.banner .stats .divider.closed,
+.overlay.framed .stats .divider.closed {
+  margin-left: -1.5em;
+}
+
+.overlay.banner .stats .divider.closed,
+.overlay.framed .stats .divider.closed {
+  flex-grow: 0;
+  opacity: 0;
+}
+
+/* The divider pushes Defeated to the right, and keeps its line however
+   tight the numbers get. */
+.overlay.banner .divider,
+.overlay.framed .divider {
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  width: 1px;
+  margin: 0.35em 0 0.35em auto;
+  background: linear-gradient(transparent, var(--accent-glow), transparent);
+  transition:
+    flex-grow 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-left 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 250ms ease-out;
+}
+
+/* Only the first divider pushes; the one before the Play Time sits between. */
+.overlay.banner .divider ~ .divider {
+  margin-left: 0;
+}
+
+.overlay.banner .divider::after,
+.overlay.framed .divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -3px;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* The gold rule, brightest under the number. */
+.overlay.banner .rule {
+  position: relative;
+  height: 1px;
+  margin-top: 0.5em;
+  background: linear-gradient(90deg, var(--accent), var(--accent-faint));
+  box-shadow: 0 0 0.5em var(--accent-glow);
+}
+
+.overlay.banner .rule::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 26%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0.7em 0.25em var(--accent-glow);
+}
+
+/* The boss line takes the width the numbers give the panel, and never
+   widens it: a long name closes up and shrinks to fit, and past that is cut
+   short. */
+.overlay.banner .reveal,
+.overlay.framed .reveal {
+  width: 0;
+  min-width: 100%;
+  overflow: hidden;
+  transition: height 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.banner .boss,
+.overlay.framed .boss {
+  display: grid;
+  padding-top: 0.6em;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}
+
+/* What the line shows, and while another passes through, the one giving
+   way, in the same place. */
+.overlay.banner .boss > .turn,
+.overlay.framed .boss > .turn {
+  display: flex;
+  grid-area: 1 / 1;
+  align-items: baseline;
+  gap: 0.7em;
+  min-width: 0;
+}
+
+/* As the feed's stats pass (.passing above). */
+.overlay.banner .boss > .turn.out,
+.overlay.framed .boss > .turn.out {
+  animation: overlay-pass-out 600ms both;
+}
+
+.overlay.banner .boss > .turn.in,
+.overlay.framed .boss > .turn.in {
+  animation: overlay-pass-in 900ms 250ms both;
+}
+
+@keyframes overlay-pass-out {
+  to {
+    opacity: 0;
+    filter: blur(0.12em);
+    transform: translateY(-0.6em);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.75, 0.4);
+  }
+}
+
+@keyframes overlay-pass-in {
+  from {
+    opacity: 0;
+    filter: blur(0.12em);
+    transform: translateY(0.6em);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+.overlay.banner .reveal.open .boss,
+.overlay.framed .reveal.open .boss {
+  opacity: 1;
+  transition-delay: 90ms;
+  animation: overlay-arrive 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.overlay.banner .boss .name,
+.overlay.framed .boss .name {
+  overflow: hidden;
+  /* Set by the name's fit: closer and smaller for a long name. */
+  font-size: calc(1.12em * var(--name-scale, 1));
+  letter-spacing: var(--name-spacing, 0.14em);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* A Popout's label, before its name, spaced no wider than the name. */
+.overlay.banner .boss .label,
+.overlay.framed .boss .label {
+  flex: none;
+  letter-spacing: 0.14em;
+}
+
+.overlay.banner .boss .count,
+.overlay.framed .boss .count {
+  margin-left: auto;
+  font-size: 1.4em;
+  text-shadow: 0 0 0.3em var(--accent-glow);
+}
+
+/* The emblem. Its ticks turn once every minute and a half. */
+.overlay.banner .emblem {
+  flex: none;
+  width: 6.8em;
+  height: 6.8em;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+.overlay.banner .emblem .ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+
+.overlay.banner .emblem .ring.faint {
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+}
+
+.overlay.banner .emblem .ticks {
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-opacity: 0.7;
+  transform-origin: 60px 60px;
+  animation: overlay-spin 90s linear infinite;
+}
+
+.overlay.banner .emblem .mark {
+  fill: var(--accent);
+}
+
+.overlay.banner .emblem .z {
+  fill: var(--accent);
+  font-size: 15px;
+  font-weight: 700;
+  animation: overlay-drift 3.2s ease-in-out infinite;
+}
+
+.overlay.banner .emblem .z.small {
+  font-size: 10px;
+  animation-delay: 0.6s;
+}
+
+@keyframes overlay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes overlay-drift {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(2px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* The Framed banner: a double frame, Defeated at the far end, and the boss
+   in a darker strip along the bottom, inside the inner frame. */
+.overlay.framed {
+  padding-bottom: 6px;
+  box-shadow:
+    inset 0 0 0 1px var(--accent-glow),
+    inset 0 0 0 5px var(--background),
+    inset 0 0 0 6px var(--accent-faint);
+}
+
+.overlay.framed .stats {
+  padding-bottom: 0.4em;
+}
+
+/* In a panel taller than it needs, the numbers sit in the middle of the
+   room above the strip, and the strip stays along the bottom. */
+.overlay.framed .main {
+  align-self: stretch;
+}
+
+.overlay.framed .main > .stats {
+  margin-block: auto;
+}
+
+/* The dividers share out the room between the numbers, each with its line
+   in the middle, so a divider closing gives its room back gradually. */
+.overlay.framed .divider {
+  flex-grow: 1;
+  margin-left: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 1px 100%;
+}
+
+.overlay.framed .divider::after {
+  left: calc(50% - 3px);
+}
+
+/* The strip's line opens out to the inner frame, past the panel's padding. */
+.overlay.framed .reveal {
+  min-width: calc(100% + var(--padding) * 2.8 - 12px);
+  margin: 0 calc(6px - var(--padding) * 1.4);
+}
+
+.overlay.framed .boss {
+  padding: 0.72em calc(var(--padding) * 1.4 - 6px) 0.58em;
+  border-top: 1px solid var(--accent-faint);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* A count that's just changed rises into place and settles, as in the
+   Card. */
+.overlay.banner .count.changed,
+.overlay.framed .count.changed {
+  animation: overlay-count 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* "You died" (Overlay.tsx), over the whole panel, cut to its corners. A
+   dark backdrop fades in as the words come up and spread, then fades away
+   to the counts from before the Death, which give way to the new ones a
+   moment later. */
+.overlay.card,
+.overlay.banner,
+.overlay.framed {
+  position: relative;
+}
+
+.overlay .you-died {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(8, 5, 5, 0.95), rgba(26, 8, 7, 0.96));
+  pointer-events: none;
+  animation: overlay-backdrop 2400ms both;
+}
+
+.overlay .you-died .words {
+  color: #d0362a;
+  font-size: 2.2em;
+  font-weight: var(--weight);
+  line-height: 1;
+  text-shadow: 0 0 0.35em rgba(184, 33, 27, 0.7);
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: overlay-words 1600ms 200ms both;
+}
+
+@keyframes overlay-backdrop {
+  0% {
+    opacity: 0;
+    animation-timing-function: ease-out;
+  }
+  12%,
+  80% {
+    opacity: 1;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes overlay-words {
+  0% {
+    opacity: 0;
+    letter-spacing: 0.16em;
+    transform: scale(1.06);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  25% {
+    opacity: 1;
+    animation-timing-function: linear;
+  }
+  80% {
+    opacity: 1;
+    animation-timing-function: ease-in;
+  }
+  100% {
+    opacity: 0;
+    letter-spacing: 0.3em;
+    transform: none;
+  }
+}

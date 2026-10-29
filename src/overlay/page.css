@@ -1,0 +1,6 @@
+/* Transparent, so it sits on top of the OBS scene. */
+html,
+body {
+  margin: 0;
+  background: transparent;
+}

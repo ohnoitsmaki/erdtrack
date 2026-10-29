@@ -1,0 +1,23 @@
+node_modules
+dist
+.env.local
+.env*.local
+.convex
+
+# Real save files (contain Steam IDs). Never commit.
+local-saves
+*.sl2
+*.co2
+*.sl2.bak
+*.co2.bak
+
+
+# The App's build output
+dist-app
+src-tauri/target
+src-tauri/gen
+
+# The screen spike's build output, and the regions it saves from the game's
+# screen, which can show the character's name.
+spikes/screen/target
+spikes/screen/captures

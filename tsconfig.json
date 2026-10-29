@@ -1,0 +1,11 @@
+{
+  "files": [],
+  // For tools that only read this file, like the shadcn CLI. The compiler
+  // reads the copy in tsconfig.app.json.
+  "compilerOptions": { "paths": { "@ui/*": ["./ui/*"] } },
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" },
+    { "path": "./convex/tsconfig.json" }
+  ]
+}

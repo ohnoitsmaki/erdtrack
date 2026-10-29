@@ -1,0 +1,75 @@
+# Run by hand from the Actions tab, to set a self-hosted copy up and to
+# change its settings. It writes the settings to the Convex deployment, then
+# deploys. It can run before the Twitch application exists, to find the
+# redirect URL that application needs (docs/deployment.md).
+name: Set up
+
+on:
+  workflow_dispatch:
+    inputs:
+      streamer:
+        description: "The Streamer's Twitch login"
+        required: true
+        type: string
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+      TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+      STREAMER: ${{ inputs.streamer }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 12.14.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check the deploy key
+        run: |
+          if [ -z "$CONVEX_DEPLOY_KEY" ]; then
+            echo "::error::Add the CONVEX_DEPLOY_KEY secret first (docs/deployment.md)."
+            exit 1
+          fi
+      - name: Set the Streamer
+        run: npx convex env set OWNER_TWITCH_LOGIN "${STREAMER#@}"
+      # Made once. Making it again would sign everyone out.
+      - name: Make the sign-in secret
+        run: |
+          if ! npx convex env list --names-only | grep -qx BETTER_AUTH_SECRET; then
+            secret=$(openssl rand -base64 32)
+            echo "::add-mask::$secret"
+            npx convex env set BETTER_AUTH_SECRET "$secret"
+          fi
+      - name: Set the Twitch application
+        run: |
+          if [ -n "$TWITCH_CLIENT_ID" ] && [ -n "$TWITCH_CLIENT_SECRET" ]; then
+            npx convex env set TWITCH_CLIENT_ID "$TWITCH_CLIENT_ID"
+            npx convex env set TWITCH_CLIENT_SECRET "$TWITCH_CLIENT_SECRET"
+          else
+            {
+              echo "## Twitch isn't set up yet"
+              echo
+              echo "Create the Twitch application with the redirect URL below, add its"
+              echo "TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET secrets, and run Set up again."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  deploy:
+    needs: configure
+    uses: ./.github/workflows/deploy.yml
+    secrets:
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}

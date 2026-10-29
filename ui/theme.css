@@ -1,0 +1,253 @@
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/geist-mono";
+
+/* Only the Panel's screens, the App's window and ui/ itself use Tailwind
+   classes, never the Overlay page, which doesn't load this stylesheet. */
+@source "../src";
+@source "../app";
+@source "./";
+
+/* Dark only: every page is always dark, so `dark:` applies everywhere. */
+@custom-variant dark (&:where(:root, :root *));
+
+@theme inline {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+  --font-heading: var(--font-sans);
+  /* Rows, lists and the sidebar (13.5px), and what's quieter beside them:
+     chips, secondary lines, counts in headers (13px). */
+  --text-body: 0.9643rem;
+  --text-meta: 0.9286rem;
+  /* The smallest a touch target can be: see tap-target below. */
+  --spacing-tap: 48px;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Neutral graphite: panels a step up from the page, and the yellow kept
+   for the one action that matters most on each screen. */
+:root {
+  color-scheme: dark;
+  --radius: 0.625rem;
+  --background: #161618;
+  --foreground: #ededef;
+  --card: #1c1c1f;
+  --card-foreground: #ededef;
+  --popover: #232326;
+  --popover-foreground: #ededef;
+  --primary: #faed76;
+  --primary-foreground: #1a1806;
+  --secondary: #26262a;
+  --secondary-foreground: #ededef;
+  --muted: #232326;
+  --muted-foreground: #8b8b93;
+  --accent: #26262a;
+  --accent-foreground: #ededef;
+  --destructive: #f87171;
+  --destructive-foreground: #ededef;
+  --success: #4ade80;
+  --success-foreground: #0b1a10;
+  --warning: #fbbf24;
+  --warning-foreground: #1a1406;
+  --border: rgb(255 255 255 / 0.07);
+  --input: rgb(255 255 255 / 0.09);
+  --ring: rgb(250 237 118 / 0.7);
+  --sidebar: #161618;
+  --sidebar-foreground: #ededef;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: #222225;
+  --sidebar-accent-foreground: #ededef;
+  --sidebar-border: rgb(255 255 255 / 0.06);
+  --sidebar-ring: var(--ring);
+}
+
+/* A surface a step up from the page, with light catching its top edge. */
+@utility panel {
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.035),
+    0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+/* On a touch screen, a control smaller than a fingertip still takes a 48px
+   tap: an invisible area centred on it, so the control can look compact.
+   Google asks for 48dp, Apple for 44pt. A list row can't borrow its
+   neighbours' space, so rows are min-h-tap instead. */
+@utility tap-target {
+  @media (pointer: coarse) {
+    /* Without weight, so a control placed absolute stays absolute. */
+    :where(&) {
+      position: relative;
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 48px);
+      height: max(100%, 48px);
+      translate: -50% -50%;
+    }
+  }
+}
+
+/* A number that changed rolls up into place. */
+@keyframes roll-in {
+  from {
+    transform: translateY(45%);
+    opacity: 0;
+  }
+}
+
+/* A Death that arrives while the list is open slides in, lit for a moment. */
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+    background-color: rgb(250 237 118 / 0.12);
+  }
+  60% {
+    background-color: rgb(250 237 118 / 0.08);
+  }
+}
+
+/* A cell of the pixel loader lights up as the wave passes. */
+@keyframes pixel-wave {
+  0%,
+  70%,
+  100% {
+    opacity: 0.12;
+  }
+  35% {
+    opacity: 1;
+  }
+}
+
+/* Nine cells, lit in a wave from one corner to the other. */
+@utility pixel-loader {
+  display: grid;
+  grid-template-columns: repeat(3, 5px);
+  gap: 3px;
+
+  & > * {
+    width: 5px;
+    height: 5px;
+    border-radius: 1.5px;
+    background-color: currentColor;
+    opacity: 0.12;
+    animation: pixel-wave 1.4s ease-in-out infinite;
+  }
+
+  & > :nth-child(2),
+  & > :nth-child(4) {
+    animation-delay: 0.12s;
+  }
+
+  & > :nth-child(3),
+  & > :nth-child(5),
+  & > :nth-child(7) {
+    animation-delay: 0.24s;
+  }
+
+  & > :nth-child(6),
+  & > :nth-child(8) {
+    animation-delay: 0.36s;
+  }
+
+  & > :nth-child(9) {
+    animation-delay: 0.48s;
+  }
+}
+
+@utility animate-roll-in {
+  animation: roll-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@utility animate-arrive {
+  animation: arrive 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The rule Base UI would inject as an inline <style>, which both Content
+   Security Policies refuse. Each surface's root sets CSPProvider
+   disableStyleElements, so it lives here instead. */
+.base-ui-disable-scrollbar {
+  scrollbar-width: none;
+}
+
+.base-ui-disable-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  /* Denser than the browser's 16px, on every screen. */
+  html {
+    @apply font-sans;
+    font-size: 14px;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+
+  ::selection {
+    @apply bg-primary text-primary-foreground;
+  }
+}

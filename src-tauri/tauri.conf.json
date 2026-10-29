@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Erdtrack",
+  "version": "0.6.1",
+  "identifier": "app.erdtrack",
+  "build": {
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist-app",
+    "beforeDevCommand": "pnpm dev:app",
+    "beforeBuildCommand": "pnpm build:app"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src ipc: http://ipc.localhost https://*.convex.site; base-uri 'none'; form-action 'none'"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["icons/icon.ico", "icons/icon.png"]
+  }
+}

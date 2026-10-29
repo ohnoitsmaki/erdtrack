@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Everything the App may do. Anything not listed here is refused.",
+  "windows": ["main"],
+  "permissions": [
+    "allow-watch-save",
+    "allow-load-settings",
+    "allow-save-settings"
+  ]
+}

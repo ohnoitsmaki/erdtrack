@@ -970,13 +970,19 @@ async function describeAction(ctx: QueryCtx, change: Doc<"changes">) {
         ? `Changed ${bossName(first.before)} to ${bossName(first.after)}`
         : "Changed a boss";
     case "recordDeath":
+    case "recordGravityDeath":
     case "removeDeath": {
       const death =
         first?.kind === "recorded" && (await ctx.db.get(first.deathId));
       const where = death ? await nameOf(death.encounterId) : "an Encounter";
-      return change.action === "recordDeath"
-        ? `Recorded a Death in ${where}`
-        : `Removed a Death from ${where}`;
+      switch (change.action) {
+        case "recordDeath":
+          return `Recorded a Death in ${where}`;
+        case "recordGravityDeath":
+          return `Recorded a Gravity Death in ${where}`;
+        default:
+          return `Removed a Death from ${where}`;
+      }
     }
     case "addDeaths": {
       const added = change.effects.find((e) => e.kind === "recordedMany");

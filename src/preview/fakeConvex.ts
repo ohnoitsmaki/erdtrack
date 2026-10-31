@@ -395,6 +395,20 @@ export class FakeConvex {
         this.log("recordDeath", `Recorded a Death in ${this.encounter(current).name}`);
         return null;
       }
+      case "deaths:recordGravity": {
+        const gravityId = s.tags.find((t) => t.gravity)!._id;
+        const latest = this.deathsIn(runId).at(-1);
+        if (latest && Date.now() - latest.at < DEATH_COOLDOWN_MS) {
+          latest.tagIds = [...new Set([...latest.tagIds, gravityId])];
+          this.log("updateDeaths", "1 Death Gravity");
+          return null;
+        }
+        const current = s.current.get(runId)!;
+        this.addDeath(runId, current);
+        this.deathsIn(runId).at(-1)!.tagIds = [gravityId];
+        this.log("recordGravityDeath", `Recorded a Gravity Death in ${this.encounter(current).name}`);
+        return null;
+      }
       case "deaths:update": {
         const chosen = s.deaths.filter((d) => (a.deathIds as string[]).includes(d._id));
         if (a.encounterId) {

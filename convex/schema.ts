@@ -276,6 +276,7 @@ export default defineSchema({
       v.literal("setCurrent"),
       v.literal("markDefeated"),
       v.literal("recordDeath"),
+      v.literal("recordGravityDeath"),
       v.literal("removeDeath"),
       v.literal("addDeaths"),
       v.literal("createRun"),

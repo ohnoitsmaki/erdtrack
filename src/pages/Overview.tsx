@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
+  IconArrowBigDownLines,
   IconArrowsExchange,
   IconCheck,
   IconMap2,
@@ -147,7 +148,10 @@ export function Overview() {
             <CountsPane run={run} />
           )}
           <div className="fixed inset-x-3 bottom-[max(--spacing(3),env(safe-area-inset-bottom))] z-20 md:left-[calc(var(--sidebar-width)+--spacing(3))] md:group-has-data-[collapsible=icon]/sidebar-wrapper:left-[calc(var(--sidebar-width-icon)+--spacing(3))]">
-            <DeathButton run={run} className="h-14 w-full text-base" />
+            <div className="flex gap-2">
+              <GravityButton run={run} className="h-14 text-base" />
+              <DeathButton run={run} className="h-14 flex-1 text-base" />
+            </div>
           </div>
         </>
       )}
@@ -509,6 +513,7 @@ function NowPanel({ run }: { run: RunView }) {
             </ComboboxList>
           </ComboboxContent>
         </Combobox>
+        <GravityButton run={run} className="max-lg:hidden" shortcut />
         <DeathButton run={run} className="max-lg:hidden" shortcut />
       </div>
     </section>
@@ -519,7 +524,7 @@ function NowPanel({ run }: { run: RunView }) {
 // after the Run's latest Death, whoever recorded it, so two Mods pressing
 // for the same death record it once; the backend refuses it too. While it
 // waits it says the Death was recorded, filling back up as the cooldown
-// runs. With `shortcut`, D records one too, unless typing or in a dialog.
+// runs. With `shortcut`, D records one too.
 function DeathButton({
   run,
   shortcut = false,
@@ -535,34 +540,7 @@ function DeathButton({
   const { fraction, seconds } = useCooldown(run.lastDeathAt);
   const cooling = seconds > 0;
   const press = () => track(() => attempt(() => record({ runId: run._id })));
-  const ready = useRef(false);
-  ready.current = !cooling && !pending;
-  const pressRef = useRef(press);
-  pressRef.current = press;
-  useEffect(() => {
-    if (!shortcut) {
-      return;
-    }
-    const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (
-        event.key.toLowerCase() !== "d" ||
-        event.repeat ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        target.closest("input, textarea, select, [contenteditable]") ||
-        document.querySelector('[role="dialog"], [role="alertdialog"]')
-      ) {
-        return;
-      }
-      if (ready.current) {
-        pressRef.current();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [shortcut]);
+  useShortcut("d", shortcut && !cooling && !pending, press);
   return (
     <button
       type="button"
@@ -593,14 +571,87 @@ function DeathButton({
         <>
           Death
           {shortcut && (
-            <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-current/25 px-1 font-sans text-[11px] font-medium opacity-70">
-              D
-            </kbd>
+            <Kbd>D</Kbd>
           )}
         </>
       )}
     </button>
   );
+}
+
+// Records a Death the player fell to, already tagged Gravity. Right after a
+// Death, by anyone or the Watcher, it tags that one instead, so it never
+// waits out the cooldown. With `shortcut`, G does it too.
+function GravityButton({
+  run,
+  shortcut = false,
+  className,
+}: {
+  run: RunView;
+  shortcut?: boolean;
+  className?: string;
+}) {
+  const recordGravity = useMutation(api.deaths.recordGravity);
+  const attempt = useAttempt();
+  const [pending, track] = usePending();
+  const press = () =>
+    track(() => attempt(() => recordGravity({ runId: run._id })));
+  useShortcut("g", shortcut && !pending, press);
+  return (
+    <button
+      type="button"
+      onClick={press}
+      disabled={pending}
+      aria-busy={pending || undefined}
+      aria-keyshortcuts={shortcut ? "G" : undefined}
+      className={cn(
+        "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border bg-secondary px-4 text-sm font-semibold outline-none pointer-coarse:min-h-tap transition-[background-color,scale] select-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/40 active:scale-[0.98] disabled:opacity-80",
+        className,
+      )}
+    >
+      {pending ? <Spinner /> : <IconArrowBigDownLines className="size-4.5" stroke={2.2} />}
+      Gravity
+      {shortcut && <Kbd>G</Kbd>}
+    </button>
+  );
+}
+
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-current/25 px-1 font-sans text-[11px] font-medium opacity-70">
+      {children}
+    </kbd>
+  );
+}
+
+// Calls `onPress` when `key` is pressed while `enabled`, unless typing, in a
+// dialog, or holding a modifier.
+function useShortcut(key: string, enabled: boolean, onPress: () => void) {
+  const ready = useRef(false);
+  ready.current = enabled;
+  const pressRef = useRef(onPress);
+  pressRef.current = onPress;
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        event.key.toLowerCase() !== key ||
+        event.repeat ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        target.closest("input, textarea, select, [contenteditable]") ||
+        document.querySelector('[role="dialog"], [role="alertdialog"]')
+      ) {
+        return;
+      }
+      if (ready.current) {
+        pressRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [key]);
 }
 
 // What's left of the cooldown after `lastDeathAt`: the fraction, for the

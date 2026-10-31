@@ -10,6 +10,7 @@ export type Kind = (typeof KINDS)[number];
 const KIND_OF: Record<Exclude<Action, "undo">, Kind> = {
   updateDeaths: "Deaths",
   recordDeath: "Deaths",
+  recordGravityDeath: "Deaths",
   removeDeath: "Deaths",
   addDeaths: "Deaths",
   addEncounter: "Encounters",

@@ -186,6 +186,116 @@ describe("the cooldown", () => {
   });
 });
 
+async function gravityCount(asOwner: AsUser) {
+  const run = await asOwner.query(api.runs.activeRun, {});
+  return run!.tallies.find((tally) => tally.gravity)!.count;
+}
+
+describe("recording a Gravity Death", () => {
+  test("is one Change that adds a Death already tagged Gravity", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+
+    await asOwner.mutation(api.deaths.recordGravity, { runId });
+
+    expect(await counts(asOwner)).toEqual({ total: 1, Overworld: 1, Margit: 0 });
+    expect(await gravityCount(asOwner)).toBe(1);
+    const [newest] = await asOwner.query(api.changes.history, {});
+    expect(newest).toMatchObject({
+      action: "recordGravityDeath",
+      description: "Recorded a Gravity Death in Overworld",
+    });
+  });
+
+  test("undoing it takes the Death and its Gravity tally back, and redo restores both", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    await asOwner.mutation(api.deaths.recordGravity, { runId });
+
+    await undoNewest(asOwner);
+    expect((await counts(asOwner)).total).toBe(0);
+    expect(await gravityCount(asOwner)).toBe(0);
+
+    await undoNewest(asOwner);
+    expect((await counts(asOwner)).total).toBe(1);
+    expect(await gravityCount(asOwner)).toBe(1);
+  });
+
+  test("starts the cooldown like any Death", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    await asOwner.mutation(api.deaths.recordGravity, { runId });
+
+    await expect(
+      asOwner.mutation(api.deaths.record, { runId }),
+    ).rejects.toThrow("A Death was just recorded.");
+  });
+
+  test("within the cooldown tags the Death just recorded, instead of making another", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    const asSomeMod = await signInSomeMod(t, asOwner);
+    await recordDeaths(asOwner, runId, 1);
+
+    await asSomeMod.mutation(api.deaths.recordGravity, { runId });
+
+    expect((await counts(asOwner)).total).toBe(1);
+    expect(await gravityCount(asOwner)).toBe(1);
+    const [newest] = await asOwner.query(api.changes.history, {});
+    expect(newest).toMatchObject({
+      action: "updateDeaths",
+      description: "1 Death Gravity",
+    });
+  });
+
+  test("pressed twice for one fall counts it once", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    const asSomeMod = await signInSomeMod(t, asOwner);
+    await asOwner.mutation(api.deaths.recordGravity, { runId });
+
+    await asSomeMod.mutation(api.deaths.recordGravity, { runId });
+
+    expect((await counts(asOwner)).total).toBe(1);
+    expect(await gravityCount(asOwner)).toBe(1);
+    const [newest] = await asOwner.query(api.changes.history, {});
+    expect(newest!.action).toBe("recordGravityDeath");
+  });
+
+  test("after the cooldown records a new one", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    await recordDeaths(asOwner, runId, 1);
+
+    vi.setSystemTime(Date.now() + DEATH_COOLDOWN_MS);
+    await asOwner.mutation(api.deaths.recordGravity, { runId });
+
+    expect((await counts(asOwner)).total).toBe(2);
+    expect(await gravityCount(asOwner)).toBe(1);
+  });
+
+  test("within the cooldown of an undone Death is refused", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    await recordDeaths(asOwner, runId, 1);
+    await undoNewest(asOwner);
+
+    await expect(
+      asOwner.mutation(api.deaths.recordGravity, { runId }),
+    ).rejects.toThrow("A Death was just recorded.");
+  });
+
+  test("is refused in an archived Run", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    await asOwner.mutation(api.runs.archive, { runId });
+
+    await expect(
+      asOwner.mutation(api.deaths.recordGravity, { runId }),
+    ).rejects.toThrow("Tarnished's Run is archived.");
+  });
+});
+
 describe("removing a Death", () => {
   test("is a Change that takes it off its Encounter, and undoing it brings it back", async () => {
     const t = setup();

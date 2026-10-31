@@ -105,6 +105,7 @@ export async function recordDeathAs(
   actor: Actor,
   runId: Id<"runs">,
   encounterId?: Id<"encounters">,
+  gravityId?: Id<"tags">,
 ) {
   const run = await requireActorsRun(ctx, actor, runId);
   const now = Date.now();
@@ -121,10 +122,12 @@ export async function recordDeathAs(
   const deathId = await ctx.db.insert("deaths", {
     runId: run._id,
     encounterId: encounter._id,
+    tagIds: gravityId && [gravityId],
     removed: true,
     recordedAt: now,
   });
-  await recordChange(ctx, actor, run._id, "recordDeath", [
+  const action = gravityId ? "recordGravityDeath" : "recordDeath";
+  await recordChange(ctx, actor, run._id, action, [
     { kind: "recorded", deathId, before: false, after: true },
   ]);
   await ctx.db.patch(run._id, { lastDeathAt: now });
@@ -187,6 +190,45 @@ export const record = mutation({
       runId,
       encounterId,
     );
+  },
+});
+
+// One Death the player fell to, tagged Gravity, as a single Change. Within
+// the cooldown, the Death just recorded, by a Mod pressing Death or by the
+// Watcher reading the save first, is that fall, so it's tagged Gravity
+// instead of another being made.
+export async function recordGravityDeathAs(
+  ctx: MutationCtx,
+  actor: Actor,
+  runId: Id<"runs">,
+) {
+  const run = await requireActorsRun(ctx, actor, runId);
+  const gravityId = await gravityTag(ctx, actor.channel._id);
+  const { lastDeathAt } = run;
+  if (lastDeathAt === undefined || Date.now() - lastDeathAt >= DEATH_COOLDOWN_MS) {
+    return await recordDeathAs(ctx, actor, runId, undefined, gravityId);
+  }
+  const latest = await ctx.db
+    .query("deaths")
+    .withIndex("by_run_recordedAt", (q) =>
+      q.eq("runId", run._id).eq("recordedAt", lastDeathAt),
+    )
+    .filter((q) => q.neq(q.field("removed"), true))
+    .first();
+  if (!latest) {
+    throw new ConvexError("A Death was just recorded. Wait a moment.");
+  }
+  await updateDeathsAs(ctx, actor, {
+    deathIds: [latest._id],
+    tag: { tagId: gravityId, tagged: true },
+  });
+  return latest._id;
+}
+
+export const recordGravity = mutation({
+  args: { runId: v.id("runs") },
+  handler: async (ctx, { runId }) => {
+    return await recordGravityDeathAs(ctx, await requireActor(ctx), runId);
   },
 });
 

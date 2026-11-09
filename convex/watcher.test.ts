@@ -744,7 +744,7 @@ describe("Deaths topped up to the Save Total", () => {
 
     vi.setSystemTime(firstAt + 32_000);
     await expect(asOwner.mutation(api.deaths.record, { runId })).rejects.toThrow(
-      "A Death was just recorded",
+      "The Watcher just counted that Death from the save.",
     );
     vi.setSystemTime(firstAt + 36_000);
     await asOwner.mutation(api.deaths.record, { runId });

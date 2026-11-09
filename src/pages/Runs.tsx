@@ -28,6 +28,7 @@ import { SkeletonText } from "@ui/components/skeleton";
 import { usePending } from "@ui/hooks/use-pending";
 import { api } from "../../convex/_generated/api";
 import { ConfirmDialog, useConfirmTarget } from "../ConfirmDialog";
+import { useMakeActive } from "../MakeActive";
 import { CreateRun } from "../CreateRun";
 import type { Role } from "../routes";
 import { runActions } from "../runs";
@@ -120,7 +121,7 @@ function RunItem({
   role: Role;
   onDelete: () => void;
 }) {
-  const setActive = useMutation(api.runs.setActive);
+  const { makeActive, dialog } = useMakeActive();
   const archive = useMutation(api.runs.archive);
   const attempt = useAttempt();
   // The menu closes as an action is picked, so its button shows the spinner.
@@ -162,7 +163,7 @@ function RunItem({
           <DropdownMenuContent align="end" className="min-w-44">
             {actions.includes("makeActive") && (
               <DropdownMenuItem
-                onClick={() => track(() => attempt(() => setActive({ runId: run._id })))}
+                onClick={() => track(() => makeActive(run))}
               >
                 <IconPlayerPlay />
                 Make active
@@ -188,6 +189,7 @@ function RunItem({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+      {dialog}
     </li>
   );
 }

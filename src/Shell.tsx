@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useConvexConnectionState, useQuery } from "convex/react";
 import { Link } from "wouter";
 import {
   IconCheck,
@@ -46,7 +46,7 @@ import { api } from "../convex/_generated/api";
 import { useSignOut } from "./authClient";
 import { navFor, type Page, type Role } from "./routes";
 import { Elapsed, LiveDot, StreamControl } from "./StreamControl";
-import { useAttempt } from "./useAttempt";
+import { useMakeActive } from "./MakeActive";
 import { WatcherStatus } from "./WatcherStatus";
 
 const ICONS = {
@@ -110,6 +110,7 @@ export function Shell({
           <SidebarTrigger className="-ml-1.5 text-muted-foreground" />
           <h1 className="truncate text-[15px] font-semibold tracking-tight">{title}</h1>
           <span className="ml-auto flex shrink-0 items-center gap-2">
+            <ConnectionPill />
             {role && <LivePill />}
             {action}
           </span>
@@ -226,8 +227,7 @@ function UserMenu({ role, displayName }: { role: Role; displayName?: string }) {
 // every page is about. Switching here does what Make active on Runs does.
 function RunSwitcher() {
   const runs = useQuery(api.runs.list);
-  const setActive = useMutation(api.runs.setActive);
-  const attempt = useAttempt();
+  const { makeActive, dialog } = useMakeActive();
   const [pending, track] = usePending();
   const { isMobile, setOpenMobile } = useSidebar();
   if (runs === undefined) {
@@ -267,10 +267,7 @@ function RunSwitcher() {
                 <DropdownMenuItem
                   key={run._id}
                   disabled={pending}
-                  onClick={() =>
-                    !run.active &&
-                    track(() => attempt(() => setActive({ runId: run._id })))
-                  }
+                  onClick={() => !run.active && track(() => makeActive(run))}
                 >
                   <span className="min-w-0 flex-1 truncate">{run.characterName}</span>
                   <span className="text-xs text-muted-foreground tabular-nums">{run.total}</span>
@@ -288,6 +285,7 @@ function RunSwitcher() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {dialog}
       </SidebarMenuItem>
     </SidebarMenu>
   );
@@ -382,6 +380,41 @@ function LivePill() {
       {watcher?.online && (
         <span className="ml-0.5 size-1.5 rounded-full bg-emerald-400" title="Watcher online" />
       )}
+    </span>
+  );
+}
+
+// How long the connection must be down before it says so, so a blip as the
+// tab wakes doesn't flash it.
+const RECONNECTING_AFTER_MS = 1500;
+
+// Says the Panel has lost its connection, so a Mod pressing Death isn't left
+// wondering. Convex keeps what's pressed meanwhile and sends it once it's
+// back, so presses aren't lost, only late. Never before it first connects:
+// the page's skeletons cover that.
+function ConnectionPill() {
+  const { isWebSocketConnected, hasEverConnected } = useConvexConnectionState();
+  const down = hasEverConnected && !isWebSocketConnected;
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!down) {
+      setShown(false);
+      return;
+    }
+    const timeout = setTimeout(() => setShown(true), RECONNECTING_AFTER_MS);
+    return () => clearTimeout(timeout);
+  }, [down]);
+  if (!shown) {
+    return null;
+  }
+  return (
+    <span
+      role="status"
+      title="What's pressed meanwhile goes through once it's back."
+      className="flex items-center gap-1.5 rounded-full bg-orange-400/12 px-2.5 py-1 text-xs font-medium text-orange-300"
+    >
+      <Spinner className="size-3" />
+      Reconnecting
     </span>
   );
 }

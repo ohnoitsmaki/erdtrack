@@ -17,7 +17,6 @@ import {
   IconLink,
   IconPencil,
   IconPlus,
-  IconSpeakerphone,
   IconX,
 } from "@tabler/icons-react";
 import { Skeleton, SkeletonText } from "@ui/components/skeleton";
@@ -90,6 +89,7 @@ import {
   type Preset,
 } from "./presets";
 import { PreviewRoot } from "./PreviewRoot";
+import { PopOutButton, toughestOf } from "../PopOut";
 import "./editor.css";
 
 // A change is saved once the slider stops moving, and OBS follows each save.
@@ -218,7 +218,13 @@ export function StyleEditor() {
         tools={
           <>
             {overlay && (style.layout === "banner" || style.layout === "framed") && (
-              <PopOutToughest overlay={overlay} />
+              <PopOutButton
+                name={
+                  toughestOf(
+                    overlay.encounters.filter(({ name }) => name !== "Overworld"),
+                  )?.name ?? null
+                }
+              />
             )}
             <PresetsButton
               style={style}
@@ -1313,40 +1319,6 @@ const ADDRESSES = [
   { name: "Overlay", path: "/overlay" },
   { name: "List view", path: "/overlay/list" },
 ];
-
-// Pops out the boss with the most Deaths on the Overlay, such as when chat
-// asks. It's rarely wanted, so it's tucked away here by the Preview, which
-// shows it too. The Overlay finds the boss from its own counts, the same
-// way: any Encounter on its lists but Overworld. There's none before one
-// has a Death.
-function PopOutToughest({ overlay }: { overlay: OverlayData }) {
-  const popOut = useMutation(api.overlay.popOut);
-  const attempt = useAttempt();
-  const [popping, track] = usePending();
-  const toughest = overlay.encounters
-    .filter(({ name }) => name !== "Overworld")
-    .reduce<OverlayData["encounters"][number] | null>(
-      (most, encounter) =>
-        encounter.deathCount > (most?.deathCount ?? 0) ? encounter : most,
-      null,
-    );
-  const label = toughest
-    ? `Pop out ${toughest.name}, the boss with the most Deaths`
-    : "Pop out the boss with the most Deaths";
-  return (
-    <Button
-      variant="outline"
-      size="icon-sm"
-      aria-label={label}
-      title={label}
-      disabled={!toughest}
-      pending={popping}
-      onClick={() => track(() => attempt(() => popOut({})))}
-    >
-      <IconSpeakerphone />
-    </Button>
-  );
-}
 
 function AddToObs() {
   return (

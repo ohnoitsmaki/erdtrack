@@ -136,7 +136,7 @@ describe("the cooldown", () => {
     vi.setSystemTime(Date.now() + DEATH_COOLDOWN_MS - 1);
     await expect(
       asOwner.mutation(api.deaths.record, { runId }),
-    ).rejects.toThrow("A Death was just recorded.");
+    ).rejects.toThrow("You just recorded that Death.");
     expect((await counts(asOwner)).total).toBe(1);
 
     vi.setSystemTime(Date.now() + 1);
@@ -152,8 +152,19 @@ describe("the cooldown", () => {
 
     await expect(
       asSomeMod.mutation(api.deaths.record, { runId }),
-    ).rejects.toThrow("A Death was just recorded.");
+    ).rejects.toThrow("Streamer just recorded that Death.");
     expect((await counts(asOwner)).total).toBe(1);
+  });
+
+  test("a refusal for an undone Death doesn't say who recorded it", async () => {
+    const t = setup();
+    const { asOwner, runId } = await runWithMargit(t);
+    await recordDeaths(asOwner, runId, 1);
+    await undoNewest(asOwner);
+
+    await expect(
+      asOwner.mutation(api.deaths.record, { runId }),
+    ).rejects.toThrow("A Death was just recorded. Wait a moment.");
   });
 
   test("the Run says when its latest Death was recorded", async () => {
@@ -228,7 +239,7 @@ describe("recording a Gravity Death", () => {
 
     await expect(
       asOwner.mutation(api.deaths.record, { runId }),
-    ).rejects.toThrow("A Death was just recorded.");
+    ).rejects.toThrow("You just recorded that Death.");
   });
 
   test("within the cooldown tags the Death just recorded, instead of making another", async () => {

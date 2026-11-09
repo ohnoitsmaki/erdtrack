@@ -1,7 +1,13 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, type MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { requireActor, requireActorsRun, type Actor } from "./channels";
+import {
+  displayName,
+  requireActor,
+  requireActorsRun,
+  WATCHER_ID,
+  type Actor,
+} from "./channels";
 import { recordChange, type Effect } from "./changes";
 import {
   currentEncounter,
@@ -110,7 +116,7 @@ export async function recordDeathAs(
   const run = await requireActorsRun(ctx, actor, runId);
   const now = Date.now();
   if (run.lastDeathAt !== undefined && now - run.lastDeathAt < DEATH_COOLDOWN_MS) {
-    throw new ConvexError("A Death was just recorded. Wait a moment.");
+    throw new ConvexError(await cooldownRefusal(ctx, actor, run._id, run.lastDeathAt));
   }
   const encounter = await requireEncounterInRun(
     ctx,
@@ -132,6 +138,47 @@ export async function recordDeathAs(
   ]);
   await ctx.db.patch(run._id, { lastDeathAt: now });
   return deathId;
+}
+
+// Who made the Death that started the cooldown, so whoever is refused knows
+// it was counted rather than lost: they're most often a Mod a few seconds
+// behind on the stream. It's the newest Change that made Deaths at
+// `lastDeathAt`, unless that Change was undone.
+const MAKES_DEATHS = new Set<Doc<"changes">["action"]>([
+  "recordDeath",
+  "recordGravityDeath",
+  "addDeaths",
+]);
+// The Changes looked through, newest first, for the one that made it.
+const RECENT_CHANGES = 10;
+
+async function cooldownRefusal(
+  ctx: MutationCtx,
+  actor: Actor,
+  runId: Id<"runs">,
+  lastDeathAt: number,
+) {
+  const recent = await ctx.db
+    .query("changes")
+    .withIndex("by_run", (q) => q.eq("runId", runId))
+    .order("desc")
+    .take(RECENT_CHANGES);
+  const undone = new Set(recent.flatMap((change) => change.undoes ?? []));
+  const made = recent.find(
+    (change) =>
+      MAKES_DEATHS.has(change.action) &&
+      Math.abs(change._creationTime - lastDeathAt) < 1000,
+  );
+  if (!made || undone.has(made._id)) {
+    return "A Death was just recorded. Wait a moment.";
+  }
+  if (made.actorTwitchId === WATCHER_ID) {
+    return "The Watcher just counted that Death from the save.";
+  }
+  if (made.actorTwitchId === actor.twitchId) {
+    return "You just recorded that Death.";
+  }
+  return `${await displayName(ctx, made.actorTwitchId)} just recorded that Death.`;
 }
 
 // Brings the Run's Deaths up to the Save Total, so a Death a Mod already

@@ -225,8 +225,14 @@ export class FakeConvex {
     throw new Error("Actions don't run in the preview.");
   }
 
+  // With ?offline, as if the connection dropped after it first came up.
   connectionState() {
-    return { hasInflightRequests: false, isWebSocketConnected: true, timeOfOldestInflightRequest: null };
+    return {
+      hasInflightRequests: false,
+      isWebSocketConnected: !new URLSearchParams(location.search).has("offline"),
+      timeOfOldestInflightRequest: null,
+      hasEverConnected: true,
+    };
   }
 
   subscribeToConnectionState() {
@@ -388,7 +394,7 @@ export class FakeConvex {
       case "deaths:record": {
         const last = this.deathsIn(runId).at(-1)?.at ?? 0;
         if (Date.now() - last < DEATH_COOLDOWN_MS) {
-          throw new Error("A Death was just recorded. Wait a moment.");
+          throw new Error("You just recorded that Death.");
         }
         const current = s.current.get(runId)!;
         this.addDeath(runId, current);

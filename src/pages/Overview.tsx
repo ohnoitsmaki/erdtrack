@@ -88,6 +88,7 @@ import {
 } from "../overview";
 import { useAttempt, type Attempt } from "../useAttempt";
 import { useDesktop } from "../useDesktop";
+import { PopOutButton, toughestOf, useHasPopouts } from "../PopOut";
 
 type Pane = "deaths" | "counts";
 
@@ -424,6 +425,9 @@ function NowPanel({ run }: { run: RunView }) {
   const [switching, trackSwitch] = usePending();
   const [defeating, trackDefeat] = usePending();
   const [query, setQuery] = useState("");
+  // Let go of once an Encounter is picked, so D and G record straight after
+  // a switch rather than typing into it.
+  const switcher = useRef<HTMLInputElement>(null);
   const current = run.encounters.find((e) => e._id === run.currentEncounterId);
   const choices = switchChoices(run.encounters, run.currentEncounterId, query);
   const tries = current && attemptOf(current);
@@ -492,6 +496,8 @@ function NowPanel({ run }: { run: RunView }) {
           onValueChange={(encounter) => {
             setQuery("");
             if (encounter) {
+              // After the Combobox has put focus back in the input.
+              setTimeout(() => switcher.current?.blur());
               trackSwitch(() =>
                 attempt(() => setCurrent({ runId: run._id, encounterId: encounter._id })),
               );
@@ -499,10 +505,21 @@ function NowPanel({ run }: { run: RunView }) {
           }}
         >
           <ComboboxInput
+            ref={switcher}
             aria-label="Switch the Current Encounter"
             placeholder="Switch encounter"
             className={NOW.switcher}
             pending={switching}
+            // Esc in an empty, closed switcher lets go of it too.
+            onKeyDown={(event) => {
+              if (
+                event.key === "Escape" &&
+                !event.currentTarget.value &&
+                event.currentTarget.getAttribute("aria-expanded") !== "true"
+              ) {
+                event.currentTarget.blur();
+              }
+            }}
           />
           <ComboboxContent>
             <ComboboxEmpty>No Encounters match.</ComboboxEmpty>
@@ -716,15 +733,28 @@ function PaneTitle({ children }: { children: ReactNode }) {
 function CountsPane({ run }: { run: RunView }) {
   const setCurrent = useMutation(api.encounters.setCurrent);
   const attempt = useAttempt();
+  const hasPopouts = useHasPopouts();
+  // As the Overlay finds it: on its lists, so not Hidden, and not Overworld.
+  const toughest = toughestOf(
+    run.encounters.filter((e) => e.kind !== "overworld" && !e.hidden),
+  );
   return (
     <Pane
       title={<PaneTitle>Counts</PaneTitle>}
       count={run.encounters.length}
       action={
-        <AddEncounter
-          runId={run._id}
-          addedBossIds={run.encounters.flatMap((e) => e.bossId ?? [])}
-        />
+        <span className="ml-auto flex items-center gap-1">
+          {hasPopouts && (
+            <PopOutButton
+              labelled
+              name={toughest && (toughest.nickname ?? encounterLines(toughest).title)}
+            />
+          )}
+          <AddEncounter
+            runId={run._id}
+            addedBossIds={run.encounters.flatMap((e) => e.bossId ?? [])}
+          />
+        </span>
       }
     >
       <ScrollArea className="min-h-0 flex-1">

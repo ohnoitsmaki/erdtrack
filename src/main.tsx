@@ -18,7 +18,8 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL);
 // sign-in, until ?preview=off. ?latency=1500 holds back sign-in and each
 // query's first result for about that long, to watch the skeletons give way
 // and score the layout shift; ?latency=hold keeps them back until the chip
-// in the corner is pressed, and ?latency=0 stops it. See
+// in the corner is pressed, and ?latency=0 stops it. ?offline shows the
+// Panel as if its connection had dropped. See
 // src/preview/fakeConvex.ts and src/preview/layoutShifts.ts.
 const PREVIEW_KEY = "erdtrack.preview";
 const LATENCY_KEY = "erdtrack.previewLatency";
